@@ -1,6 +1,40 @@
 # AIRR-seq repertoire annotation and downstream analysis
 
 
+Installation and usage guide are adapted from [Nextflow FLAIRR pipeline based on pipeAIRR](https://github.com/williamdlees/flairr_dsl2) written by William Lees
+
+## Installation
+
+The pipeline will run on Linux, or Windows Subsystem for Linux (WSL).
+
+You will need to install nextflow as well as docker.
+
+- [Nextflow](https://www.nextflow.io/)
+- [Docker client](https://www.docker.com/) or [Singularity](https://sylabs.io/guides/3.7/user-guide/quick_start.html)
+
+
+## Usage
+
+- Clone this repo
+- Review the configuration in nextflow.config and make any changes to number of threads, etc.
+- Run the pipeline with the following line
+ 
+```bash
+sample="sample.fasta"
+outDir=${pwd}
+vRef="orgdb_germlineset/IGHV_asc.fasta" # ogrdb V reference set
+dRef="orgdb_germlineset/IGHD.fasta" # ogrdb D reference set
+jRef="orgdb_germlineset/IGHJ.fasta" # ogrdb J reference set
+pigletThreshold="piglet_files/allele_threshold_table_ogrdb.tsv" # piglet allele based genotype threshold table
+
+nextflow run main.nf --airr_seq ${sample} --v_germline ${vRef} --d_germline ${dRef} --j_germline ${jRef} --allele_threshold_table ${pigletThreshold} --outdir ${outDir}
+
+# optional, a seperate work directory can be defined using -w flag
+nextflow run main.nf --airr_seq ${sample} --v_germline ${vRef} --d_germline ${dRef} --j_germline ${jRef} --allele_threshold_table ${pigletThreshold} --outdir ${outDir} -w ${work}
+```
+
+## Annotation pipeline overview:
+
 The pipeline performs anotation and downstrean analysis of AIRR-seq.
 
 The pipeline can be devided into seven main componenet:
