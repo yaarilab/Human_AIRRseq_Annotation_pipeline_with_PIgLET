@@ -3,7 +3,6 @@ params.outdir = 'results'
 
 //* params.nproc =  10  //* @input @description:"number of processes cores to use"
 //* params.chain =  "IGH"  //* @input @description:"chain"
-params.heavy_chain = "yes"
 
 // Process Parameters for First_Alignment_IgBlastn:
 params.First_Alignment_IgBlastn.num_threads = params.nproc
@@ -287,8 +286,8 @@ if(db_v.toString()!="" && db_d.toString()!="" && db_j.toString()!=""){
 
 process First_Alignment_MakeDb {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "first_rearrangement/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-fail.tsv$/) "first_rearrangement/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "initial_annotation/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-fail.tsv$/) "initial_annotation/$filename"}
 input:
  set val(name),file(fastaFile) from g_96_fastaFile_g0_12
  set val(name_igblast),file(igblastOut) from g0_9_igblastOut0_g0_12
@@ -357,8 +356,8 @@ if(igblastOut.getName().endsWith(".out")){
 
 process First_Alignment_Collapse_AIRRseq {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "first_rearrangement/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+failed.*$/) "first_rearrangement/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+failed.*$/) "initial_annotation/$filename"}
 input:
  set val(name),file(airrFile) from g0_12_outputFileTSV0_g0_19
 
@@ -1049,8 +1048,6 @@ if(db_v.toString()!="" && db_d.toString()!="" && db_j.toString()!=""){
 
 process Second_Alignment_MakeDb {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "second_rearrangement/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-fail.tsv$/) "second_rearrangement/$filename"}
 input:
  set val(name),file(fastaFile) from g_80_germlineFastaFile0_g11_12
  set val(name_igblast),file(igblastOut) from g11_9_igblastOut0_g11_12
@@ -1250,7 +1247,6 @@ g_4_germlineFastaFile_g14_1= g_4_germlineFastaFile_g14_1.ifEmpty([""])
 
 process Clone_AIRRseq_Second_CreateGermlines {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_germ-pass.tsv$/) "clone_rearrangement/$filename"}
 input:
  set val(name),file(airrFile) from g14_2_outputFileTSV0_g14_1
  set val(name1), file(v_germline_file) from g_70_germlineFastaFile0_g14_1
@@ -1306,7 +1302,6 @@ CreateGermlines.py \
 
 process Clone_AIRRseq_single_clone_representative {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*png$/) "clone_report/$filename"}
 input:
  set val(name),file(airrFile) from g14_1_outputFileTSV0_g14_9
  set val(name1),file(source_airrFile) from g11_12_outputFileTSV0_g14_9
@@ -1528,6 +1523,7 @@ if (file.exists("changes.csv")) {
 
 process asc_to_iuis {
 
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_iuis_naming.tsv$/) "pre_genotype/$filename"}
 input:
  set val(name),file(airrFile) from g_94_outputFileTSV2_g_97
  set val(name1), file(germline_file) from g_94_germlineFastaFile0_g_97
@@ -1879,7 +1875,7 @@ input:
 
 output:
  set val("${call}_genotype"),file("${call}_genotype_report.tsv")  into g_98_outputFileTSV00
- set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_98_germlineFastaFile1_g_95, g_98_germlineFastaFile1_g_37
+ set val("${call}_personal_reference"), file("${call}_personal_reference.fasta")  into g_98_germlineFastaFile1_g_95
 
 script:
 
@@ -2154,7 +2150,6 @@ if(db_v.toString()!="" && db_d.toString()!="" && db_j.toString()!=""){
 
 process Third_Alignment_MakeDb {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "rearrangements/$filename"}
 input:
  set val(name),file(fastaFile) from g_80_germlineFastaFile0_g21_12
  set val(name_igblast),file(igblastOut) from g21_9_igblastOut0_g21_12
@@ -2225,7 +2220,7 @@ g_95_outputFileCSV1_g_89= g_95_outputFileCSV1_g_89.ifEmpty([""])
 
 process change_names_back {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${rep}$/) "rearrangements/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${rep}$/) "final_annotation/$filename"}
 input:
  file csv from g_95_outputFileCSV1_g_89
  set val(name_igblast),file(rep_file) from g21_12_outputFileTSV0_g_89
@@ -2294,7 +2289,6 @@ publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*
 input:
  set val(name),file(airrFile) from g_89_outputFileTSV0_g_37
  set val(name1), file(germline_file) from g_89_germlineFastaFile1_g_37
- set val(name2), file(v_germline_file) from g_98_germlineFastaFile1_g_37
 
 output:
  file "*pdf"  into g_37_outputFilePdf00

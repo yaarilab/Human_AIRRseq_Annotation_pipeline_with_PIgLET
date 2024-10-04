@@ -105,6 +105,3 @@ The pipeline uses two docker images:
 
 1. peresay/suite
 2. williamlees/ogrdbstats
-
-
-
