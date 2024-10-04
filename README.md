@@ -17,6 +17,9 @@ You will need to install nextflow as well as docker.
 
 - Clone this repo
 - Review the configuration in nextflow.config and make any changes to number of threads, etc.
+- Pull the relevant dockers
+  1. peresay/suite:latest
+  2. williamlees/ogrdbstats:latest
 - Run the pipeline with the following line
  
 ```bash
@@ -32,6 +35,17 @@ nextflow run main.nf --airr_seq ${sample} --v_germline ${vRef} --d_germline ${dR
 # optional, a seperate work directory can be defined using -w flag
 nextflow run main.nf --airr_seq ${sample} --v_germline ${vRef} --d_germline ${dRef} --j_germline ${jRef} --allele_threshold_table ${pigletThreshold} --outdir ${outDir} -w ${work}
 ```
+
+## Pipeline Product
+
+The final product of the pipeline will results in these folders:
+
+- initial_annotation - contains the initial annotated repertoire to the input reference.
+- pre_genotype - contains the sequences used to infer the genotype.
+- genotype_report - contains the PIgLET genotype reports for V, D, and J inference.
+- final_annotation - contains the annotated repertoire to the inferred personal reference.
+- ogrdb_report - contains the OGRDB statistics reports on the final annotated repertoire.
+
 
 ## Annotation pipeline overview:
 
