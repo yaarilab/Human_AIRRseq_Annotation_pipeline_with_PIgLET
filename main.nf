@@ -667,7 +667,7 @@ input:
  set val(v_germline_name), file(v_germline_file) from g_2_germlineFastaFile_g_8
 
 output:
- set val(name),file("*novel-passed.tsv") optional true  into g_8_outputFileTSV00
+ set val(name),file("*novel-passed.tsv") optional true  into g_8_outputFileTSV0_g_97
  set val("v_germline"), file("V_novel_germline.fasta") optional true  into g_8_germlineFastaFile1_g_70
 
 script:
@@ -1520,18 +1520,23 @@ if (file.exists("changes.csv")) {
 
 }
 
+g_8_outputFileTSV0_g_97= g_8_outputFileTSV0_g_97.ifEmpty([""]) 
+
 
 process asc_to_iuis {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_iuis_naming.tsv$/) "pre_genotype/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*rep-passed_iuis_naming.tsv$/) "pre_genotype/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*novel-passed_iuis_naming.tsv$/) "novel_report/$filename"}
 input:
  set val(name),file(airrFile) from g_94_outputFileTSV2_g_97
  set val(name1), file(germline_file) from g_94_germlineFastaFile0_g_97
  set val(name2),file(allele_threshold_table_file) from g_101_outputFileTSV_g_97
+ set val(name3),file(novel_allele) from g_8_outputFileTSV0_g_97
 
 output:
- set val("${name}"),file("*_iuis_naming.tsv")  into g_97_outputFileTSV0_g_98, g_97_outputFileTSV0_g_99, g_97_outputFileTSV0_g_100
+ set val("${name}"),file("*rep-passed_iuis_naming.tsv")  into g_97_outputFileTSV0_g_98, g_97_outputFileTSV0_g_99, g_97_outputFileTSV0_g_100
  set val("${name1}"),file("v_germline_iuis_naming.fasta")  into g_97_germlineFastaFile1_g_98
+ set val("${name}"),file("*novel-passed_iuis_naming.tsv") optional true  into g_97_outputFileTSV22
 
 script:
 
@@ -1590,6 +1595,28 @@ file_out <- tools::file_path_sans_ext("${airrFile}")
 
 fwrite(repertoire, paste0(file_out,"_iuis_naming.tsv"), sep = "\t", quote = F, row.names = F)
 writeFasta(germline_db_dup, "v_germline_iuis_naming.fasta")
+
+if(file.exists("${novel_allele}")){
+	novel_df <- fread("${novel_allele}")
+	novel_df[["germline_call"]] <- sapply(novel_df[["germline_call"]], function(x) {
+      calls <- unlist(strsplit(x, ","))
+      calls <- allele_threshold_table_reference[calls]
+      calls <- calls[!duplicated(calls)]
+      paste0(calls, collapse = ",")
+    }, USE.NAMES = F)
+    novel_df[["gene"]] <- alakazam::getGene(novel_df[["germline_call"]], strip_d = FALSE, omit_nl = FALSE)
+    novel_df[["polymorphism_call"]] <- sapply(novel_df[["polymorphism_call"]], function(x) {
+      calls <- unlist(strsplit(x, ","))
+      calls <- allele_threshold_table_reference[calls]
+      calls <- calls[!duplicated(calls)]
+      paste0(calls, collapse = ",")
+    }, USE.NAMES = F)
+    
+    file_out <- tools::file_path_sans_ext("${novel_allele}")
+
+    fwrite(novel_df, paste0(file_out,"_iuis_naming.tsv"), sep = "\t", quote = F, row.names = F)
+
+}
 
 """
 }
@@ -1654,7 +1681,7 @@ if(length(germline_db)>0){
 		for(a in alleles){
 			a_split <- unlist(strsplit(a, "_"))
 			base_allele <- a_split[1]
-			snps <- pasteo(a_split[2:length(a_split)], collapse="_")
+			snps <- paste0(a_split[2:length(a_split)], collapse="_")
 			base_threshold <- allele_threshold_table[asc_allele==base_allele,]
 			if(nrow(base_threshold)!=0){
 				iuis_allele <- paste0(base_threshold[["allele"]],"_",snps)
@@ -1789,7 +1816,7 @@ if(length(germline_db)>0){
 		for(a in alleles){
 			a_split <- unlist(strsplit(a, "_"))
 			base_allele <- a_split[1]
-			snps <- pasteo(a_split[2:length(a_split)], collapse="_")
+			snps <- paste0(a_split[2:length(a_split)], collapse="_")
 			base_threshold <- allele_threshold_table[asc_allele==base_allele,]
 			if(nrow(base_threshold)!=0){
 				iuis_allele <- paste0(base_threshold[["allele"]],"_",snps)
@@ -1924,7 +1951,7 @@ if(length(germline_db)>0){
 		for(a in alleles){
 			a_split <- unlist(strsplit(a, "_"))
 			base_allele <- a_split[1]
-			snps <- pasteo(a_split[2:length(a_split)], collapse="_")
+			snps <- paste0(a_split[2:length(a_split)], collapse="_")
 			base_threshold <- allele_threshold_table[asc_allele==base_allele,]
 			if(nrow(base_threshold)!=0){
 				iuis_allele <- paste0(base_threshold[["allele"]],"_",snps)
@@ -2227,8 +2254,8 @@ input:
  set val(name2), file(rep_germline_file) from g21_12_germlineFastaFile1_g_89
 
 output:
- set val("${rep}"), file("${rep}")  into g_89_outputFileTSV0_g_37
- set val("${rep_germline}"),file("${rep_germline}")  into g_89_germlineFastaFile1_g_37
+ set val("${rep}"), file("${rep}")  into g_89_outputFileTSV0_g_37, g_89_outputFileTSV0_g_105
+ set val("${rep_germline}"),file("${rep_germline}")  into g_89_germlineFastaFile1_g_37, g_89_germlineFastaFile1_g_105
 
 
 script:
@@ -2281,11 +2308,115 @@ if (file.exists("changes.csv")) {
 
 }
 
+g_89_germlineFastaFile1_g_105= g_89_germlineFastaFile1_g_105.ifEmpty([""]) 
+
+
+process Haplotype_inference {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_haplotype.tsv$/) "haplotype_report/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_binomDel.tsv$/) "deletion_report/$filename"}
+input:
+ set val(name), file(airrFile) from g_89_outputFileTSV0_g_105
+ set val(name1),file(germline) from g_89_germlineFastaFile1_g_105
+
+output:
+ set val(outname), file("*_haplotype.tsv") optional true  into g_105_outputFileTSV00
+ set val(outname), file("*_binomDel.tsv") optional true  into g_105_outputFileTSV11
+
+script:
+
+germline = germline.name.startsWith('NO_FILE') ? "" : "${germline}"
+
+outname = airrFile.name.toString().substring(0, airrFile.name.toString().indexOf("_db-pass"))
+	
+	
+"""
+#!/usr/bin/env Rscript
+
+library(tigger)
+library(data.table)
+library(rabhit)
+library(alakazam)
+
+# read the data
+
+data <- fread("${airrFile}", data.table=FALSE)
+
+# read the germline
+germline_db <- if("${germline}"!="") readIgFasta("${germline}") else NA
+
+binom_del <-
+       rabhit::deletionsByBinom(data, chain = "IGH")
+       
+# write deletion report
+
+outfile_del = "${outname}_binomDel.tsv"
+
+write.table(binom_del, file = outfile_del, sep = '\t', row.names = F, quote = T)
+
+# haplotype inference
+
+outfile_haplotype = "${outname}_gene-"
+
+genes_haplotype <- c('IGHJ6', 'IGHD2-21', 'IGHD2-8')
+
+for (gene in genes_haplotype) {
+    CALL = paste0(tolower(substr(gene, 4, 4)), "_call")
+
+    
+    
+    if (gene == 'IGHJ6') {
+      CALL = 'j_call'
+      toHap_GERM = germline_db[grepl("IGH[VD]", names(germline_db))]
+      toHap_col = c('v_call', 'd_call')
+    }else{
+    	toHap_GERM = germline_db[grepl("IGHV", names(germline_db))]
+    	toHap_col = c('v_call')
+    }
+
+    allele_fractions <-
+      grep(gene, grep(',', data[[CALL]], invert = T, value = T), value = T)
+
+	bool <- sum(table(allele_fractions) / length(allele_fractions) >= 0.3) == 2 && length(names(table(allele_fractions))) >= 2
+
+    if (bool) {
+      names_ <- names(table(allele_fractions)[table(allele_fractions) / length(allele_fractions) >= 0.3])
+      
+      alleles <- paste0(sapply(names_, function(x) strsplit(x, '[*]')[[1]][2]), collapse = '_')
+      
+      haplo <- rabhit::createFullHaplotype(
+        data,
+        toHap_col = toHap_col,
+        hapBy_col = CALL,
+        hapBy = gene,
+        toHap_GERM = toHap_GERM,
+        deleted_genes = binom_del,
+        chain = "IGH"
+      )
+      
+      # paste0(gene, '-', alleles)
+      
+      write.table(
+        haplo,
+        file = paste0(outfile_haplotype, gene, '-', alleles, "_haplotype.tsv"),
+        sep = '\t',
+        row.names = F,
+        quote = T
+      )
+
+    }
+}
+
+
+
+"""
+}
+
 
 process ogrdbstats_report {
 
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*pdf$/) "ogrdbstats_third_alignment/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*csv$/) "ogrdbstats_third_alignment/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*pdf$/) "ogrdbstats/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*csv$/) "ogrdbstats/$filename"}
 input:
  set val(name),file(airrFile) from g_89_outputFileTSV0_g_37
  set val(name1), file(germline_file) from g_89_germlineFastaFile1_g_37
@@ -2306,8 +2437,8 @@ germline_file_path=\$(realpath ${germline_file})
 
 novel=""
 
-if grep -q "_[A-Z][0-9]" ${v_germline_file}; then
-	awk '/^>/{f=0} \$0 ~ /_[A-Z][0-9]/ {f=1} f' ${v_germline_file} > novel_sequences.fasta
+if grep -q "_[A-Z][0-9]" ${germline_file}; then
+	awk '/^>/{f=0} \$0 ~ /_[A-Z][0-9]/ {f=1} f' ${germline_file} > novel_sequences.fasta
 	novel=\$(realpath novel_sequences.fasta)
 	diff \$germline_file_path \$novel | grep '^<' | sed 's/^< //' > personal_germline.fasta
 	germline_file_path=\$(realpath personal_germline.fasta)
