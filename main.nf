@@ -144,7 +144,7 @@ params.Third_Alignment_MakeDb.name_alignment = "Finale"
 // part 7
 
 // Process Parameters for ogrdbstats_report:
-params.ogrdbstats_report.chain = params.chain+"V"
+params.ogrdbstats_report.chain = "IGHV"
 
 
 if (!params.v_germline){params.v_germline = ""} 
