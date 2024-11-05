@@ -167,56 +167,6 @@ Channel.fromPath(params.airr_seq, type: 'any').map{ file -> tuple(file.baseName,
 Channel.fromPath(params.allele_threshold_table, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_101_outputFileTSV_g_98;g_101_outputFileTSV_g_99;g_101_outputFileTSV_g_100;g_101_outputFileTSV_g_97}
 
 
-process Second_Alignment_D_MakeBlastDb {
-
-input:
- set val(db_name), file(germlineFile) from g_3_germlineFastaFile_g11_16
-
-output:
- file "${db_name}"  into g11_16_germlineDb0_g11_9
-
-script:
-
-if(germlineFile.getName().endsWith("fasta")){
-	"""
-	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
-	mkdir -m777 ${db_name}
-	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
-	"""
-}else{
-	"""
-	echo something if off
-	"""
-}
-
-}
-
-
-process Second_Alignment_J_MakeBlastDb {
-
-input:
- set val(db_name), file(germlineFile) from g_4_germlineFastaFile_g11_17
-
-output:
- file "${db_name}"  into g11_17_germlineDb0_g11_9
-
-script:
-
-if(germlineFile.getName().endsWith("fasta")){
-	"""
-	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
-	mkdir -m777 ${db_name}
-	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
-	"""
-}else{
-	"""
-	echo something if off
-	"""
-}
-
-}
-
-
 process First_Alignment_D_MakeBlastDb {
 
 input:
@@ -611,8 +561,11 @@ if(airrFile.getName().endsWith(".tsv")){
 		)
 		df['duplicate_count'] = df.groupby('sequence_trimmed')['replicate'].transform('nunique')
 		
+		
 		df = df[df['duplicate_count'] > 1]
 		df = df.groupby('sequence_trimmed', as_index=False).first()
+		dup_n2 = df[df.columns[0]].count()
+		print(str(dup_n2)+' Sequences had a duplicated sequnece in different replicates')
 		df['sequence_vdj'] = df['sequence_trimmed'].apply(lambda x: x.replace('-', '').replace('.', ''))
 	else:
 		df['sequence_vdj'] = df['sequence_alignment'].apply(lambda x: x.replace('-', '').replace('.', ''))
@@ -655,7 +608,8 @@ if(airrFile.getName().endsWith(".tsv")){
 	# removing sequences with low cons count
 	
 	filter_column = "duplicate_count"
-	if conscount_flag: filter_column = "consensus_count"
+	if conscount_flag:
+		filter_column = "consensus_count"
 	df_cons_low = df2[df2[filter_column]<conscount_filter]
 	nrow_i = df2[df2.columns[0]].count()
 	df2 = df2[df2[filter_column]>=conscount_filter]
@@ -1024,6 +978,56 @@ seqs_name <- gsub('sequence_id=', '', seqs_name, fixed = T)
 tigger::writeFasta(setNames(seqs, seqs_name), "${outfile}")
 
 """
+}
+
+
+process Second_Alignment_D_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_3_germlineFastaFile_g11_16
+
+output:
+ file "${db_name}"  into g11_16_germlineDb0_g11_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
+}
+
+
+process Second_Alignment_J_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_4_germlineFastaFile_g11_17
+
+output:
+ file "${db_name}"  into g11_17_germlineDb0_g11_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
 }
 
 
