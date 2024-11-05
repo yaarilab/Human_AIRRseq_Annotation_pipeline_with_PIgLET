@@ -606,11 +606,10 @@ if(airrFile.getName().endsWith(".tsv")){
 		    lambda row: ('.' * gap_length) + row['sequence_alignment'][gap_length:len(row['sequence_alignment']) - int(row['sequence_end'])],
 		    axis=1
 		)
-	
 		df['duplicate_count'] = df.groupby('sequence_trimmed')['replicate'].transform('nunique')
-	
+		
+		df = data_sample[df['duplicate_count'] > 1]
 		df = df.groupby('sequence_trimmed', as_index=False).first()
-	
 		df['sequence_vdj'] = df.apply(lambda x: x['sequence_trimmed'].replace('-','').replace('.',''), axis = 1)
 	else:
 		df['sequence_vdj'] = df.apply(lambda x: x['sequence_alignment'].replace('-','').replace('.',''), axis = 1)
