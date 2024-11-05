@@ -613,9 +613,9 @@ if(airrFile.getName().endsWith(".tsv")){
 		
 		df = df[df['duplicate_count'] > 1]
 		df = df.groupby('sequence_trimmed', as_index=False).first()
-		df['sequence_vdj'] = df.apply(lambda x: x['sequence_trimmed'].replace('-','').replace('.',''), axis = 1)
+		df['sequence_vdj'] = df['sequence_trimmed'].apply(lambda x: x.replace('-', '').replace('.', ''))
 	else:
-		df['sequence_vdj'] = df.apply(lambda x: x['sequence_alignment'].replace('-','').replace('.',''), axis = 1)
+		df['sequence_vdj'] = df['sequence_alignment'].apply(lambda x: x.replace('-', '').replace('.', ''))
 		
 	header=list(df.columns)
 	fasta_ = df.to_dict(orient='records')
