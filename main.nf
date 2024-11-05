@@ -214,7 +214,7 @@ if(germlineFile.getName().endsWith("fasta")){
 }
 
 
-process Alignment_D_MakeBlastDb {
+process First_Alignment_D_MakeBlastDb {
 
 input:
  set val(db_name), file(germlineFile) from g_3_germlineFastaFile_g0_16
@@ -239,7 +239,7 @@ if(germlineFile.getName().endsWith("fasta")){
 }
 
 
-process Alignment_J_MakeBlastDb {
+process First_Alignment_J_MakeBlastDb {
 
 input:
  set val(db_name), file(germlineFile) from g_4_germlineFastaFile_g0_17
@@ -264,7 +264,7 @@ if(germlineFile.getName().endsWith("fasta")){
 }
 
 
-process Alignment_V_MakeBlastDb {
+process First_Alignment_V_MakeBlastDb {
 
 input:
  set val(db_name), file(germlineFile) from g_2_germlineFastaFile_g0_22
@@ -289,7 +289,7 @@ if(germlineFile.getName().endsWith("fasta")){
 }
 
 
-process Alignment_IgBlastn {
+process First_Alignment_IgBlastn {
 
 input:
  set val(name),file(fastaFile) from g_96_fastaFile_g0_9
@@ -301,12 +301,12 @@ output:
  set val(name), file("${outfile}") optional true  into g0_9_igblastOut0_g0_12
 
 script:
-num_threads = params.Alignment_IgBlastn.num_threads
-ig_seqtype = params.Alignment_IgBlastn.ig_seqtype
-outfmt = params.Alignment_IgBlastn.outfmt
-num_alignments_V = params.Alignment_IgBlastn.num_alignments_V
-domain_system = params.Alignment_IgBlastn.domain_system
-auxiliary_data = params.Alignment_IgBlastn.auxiliary_data
+num_threads = params.First_Alignment_IgBlastn.num_threads
+ig_seqtype = params.First_Alignment_IgBlastn.ig_seqtype
+outfmt = params.First_Alignment_IgBlastn.outfmt
+num_alignments_V = params.First_Alignment_IgBlastn.num_alignments_V
+domain_system = params.First_Alignment_IgBlastn.domain_system
+auxiliary_data = params.First_Alignment_IgBlastn.auxiliary_data
 
 randomString = org.apache.commons.lang.RandomStringUtils.random(9, true, true)
 outname = name + "_" + randomString
@@ -334,7 +334,7 @@ if(db_v.toString()!="" && db_d.toString()!="" && db_j.toString()!=""){
 }
 
 
-process Alignment_MakeDb {
+process First_Alignment_MakeDb {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "initial_annotation/$filename"}
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-fail.tsv$/) "initial_annotation/$filename"}
@@ -352,15 +352,15 @@ output:
 
 script:
 
-failed = params.Alignment_MakeDb.failed
-format = params.Alignment_MakeDb.format
-regions = params.Alignment_MakeDb.regions
-extended = params.Alignment_MakeDb.extended
-asisid = params.Alignment_MakeDb.asisid
-asiscalls = params.Alignment_MakeDb.asiscalls
-inferjunction = params.Alignment_MakeDb.inferjunction
-partial = params.Alignment_MakeDb.partial
-name_alignment = params.Alignment_MakeDb.name_alignment
+failed = params.First_Alignment_MakeDb.failed
+format = params.First_Alignment_MakeDb.format
+regions = params.First_Alignment_MakeDb.regions
+extended = params.First_Alignment_MakeDb.extended
+asisid = params.First_Alignment_MakeDb.asisid
+asiscalls = params.First_Alignment_MakeDb.asiscalls
+inferjunction = params.First_Alignment_MakeDb.inferjunction
+partial = params.First_Alignment_MakeDb.partial
+name_alignment = params.First_Alignment_MakeDb.name_alignment
 
 failed = (failed=="true") ? "--failed" : ""
 format = (format=="changeo") ? "--format changeo" : ""
@@ -404,7 +404,7 @@ if(igblastOut.getName().endsWith(".out")){
 }
 
 
-process Alignment_Collapse_AIRRseq {
+process First_Alignment_Collapse_AIRRseq {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+failed.*$/) "initial_annotation/$filename"}
@@ -416,11 +416,11 @@ output:
  set val(name), file("${outfile}"+"failed*") optional true  into g0_19_outputFileTSV11
 
 script:
-conscount_min = params.Alignment_Collapse_AIRRseq.conscount_min
-n_max = params.Alignment_Collapse_AIRRseq.n_max
-name_alignment = params.Alignment_Collapse_AIRRseq.name_alignment
-collapse_replicate = params.Alignment_Collapse_AIRRseq.collapse_replicate
-replicate_tag = params.Alignment_Collapse_AIRRseq.replicate_tag
+conscount_min = params.First_Alignment_Collapse_AIRRseq.conscount_min
+n_max = params.First_Alignment_Collapse_AIRRseq.n_max
+name_alignment = params.First_Alignment_Collapse_AIRRseq.name_alignment
+collapse_replicate = params.First_Alignment_Collapse_AIRRseq.collapse_replicate
+replicate_tag = params.First_Alignment_Collapse_AIRRseq.replicate_tag
 
 outfile = airrFile.toString() - '.tsv' + name_alignment + "_collapsed-"
 
