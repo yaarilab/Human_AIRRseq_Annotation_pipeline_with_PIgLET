@@ -24,6 +24,9 @@ params.First_Alignment_MakeDb.name_alignment = "First_Alignment"
 
 // Process Parameters for First_Alignment_Collapse_AIRRseq:
 params.First_Alignment_Collapse_AIRRseq.name_alignment = "First_Alignment"
+params.First_Alignment_Collapse_AIRRseq.collapse_replicate = "true"
+params.First_Alignment_Collapse_AIRRseq.replicate_tag = "_M0"
+
 
 // Process Parameters for Undocumented_Alleles:
 params.Undocumented_Alleles.chain = params.chain
@@ -608,7 +611,7 @@ if(airrFile.getName().endsWith(".tsv")){
 		)
 		df['duplicate_count'] = df.groupby('sequence_trimmed')['replicate'].transform('nunique')
 		
-		df = data_sample[df['duplicate_count'] > 1]
+		df = df[df['duplicate_count'] > 1]
 		df = df.groupby('sequence_trimmed', as_index=False).first()
 		df['sequence_vdj'] = df.apply(lambda x: x['sequence_trimmed'].replace('-','').replace('.',''), axis = 1)
 	else:
