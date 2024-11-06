@@ -159,10 +159,404 @@ ch_empty_file_1 = file("$baseDir/.emptyfiles/NO_FILE_1", hidden:true)
 ch_empty_file_2 = file("$baseDir/.emptyfiles/NO_FILE_2", hidden:true)
 ch_empty_file_3 = file("$baseDir/.emptyfiles/NO_FILE_3", hidden:true)
 
-Channel.fromPath(params.v_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.set{g_2_germlineFastaFile_g_8}
-Channel.fromPath(params.d_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_3_germlineFastaFile_g_99;g_3_germlineFastaFile_g14_0;g_3_germlineFastaFile_g14_1;g_3_germlineFastaFile_g11_16;g_3_germlineFastaFile_g11_12}
-Channel.fromPath(params.j_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_4_germlineFastaFile_g_100;g_4_germlineFastaFile_g14_0;g_4_germlineFastaFile_g14_1;g_4_germlineFastaFile_g11_17;g_4_germlineFastaFile_g11_12}
+Channel.fromPath(params.v_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_2_germlineFastaFile_g_8;g_2_germlineFastaFile_g108_22;g_2_germlineFastaFile_g108_12}
+Channel.fromPath(params.d_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_3_germlineFastaFile_g_99;g_3_germlineFastaFile_g14_0;g_3_germlineFastaFile_g14_1;g_3_germlineFastaFile_g11_16;g_3_germlineFastaFile_g11_12;g_3_germlineFastaFile_g108_16;g_3_germlineFastaFile_g108_12}
+Channel.fromPath(params.j_germline, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_4_germlineFastaFile_g_100;g_4_germlineFastaFile_g14_0;g_4_germlineFastaFile_g14_1;g_4_germlineFastaFile_g11_17;g_4_germlineFastaFile_g11_12;g_4_germlineFastaFile_g108_17;g_4_germlineFastaFile_g108_12}
+Channel.fromPath(params.airr_seq, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_96_fastaFile_g108_12;g_96_fastaFile_g108_9}
 Channel.fromPath(params.allele_threshold_table, type: 'any').map{ file -> tuple(file.baseName, file) }.into{g_101_outputFileTSV_g_98;g_101_outputFileTSV_g_99;g_101_outputFileTSV_g_100;g_101_outputFileTSV_g_97}
+
+
+process Second_Alignment_D_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_3_germlineFastaFile_g11_16
+
+output:
+ file "${db_name}"  into g11_16_germlineDb0_g11_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
+}
+
+
+process Second_Alignment_J_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_4_germlineFastaFile_g11_17
+
+output:
+ file "${db_name}"  into g11_17_germlineDb0_g11_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
+}
+
+
+process First_Alignment_D_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_3_germlineFastaFile_g108_16
+
+output:
+ file "${db_name}"  into g108_16_germlineDb0_g108_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
+}
+
+
+process First_Alignment_J_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_4_germlineFastaFile_g108_17
+
+output:
+ file "${db_name}"  into g108_17_germlineDb0_g108_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
+}
+
+
+process First_Alignment_V_MakeBlastDb {
+
+input:
+ set val(db_name), file(germlineFile) from g_2_germlineFastaFile_g108_22
+
+output:
+ file "${db_name}"  into g108_22_germlineDb0_g108_9
+
+script:
+
+if(germlineFile.getName().endsWith("fasta")){
+	"""
+	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
+	mkdir -m777 ${db_name}
+	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
+	"""
+}else{
+	"""
+	echo something if off
+	"""
+}
+
+}
+
+
+process First_Alignment_IgBlastn {
+
+input:
+ set val(name),file(fastaFile) from g_96_fastaFile_g108_9
+ file db_v from g108_22_germlineDb0_g108_9
+ file db_d from g108_16_germlineDb0_g108_9
+ file db_j from g108_17_germlineDb0_g108_9
+
+output:
+ set val(name), file("${outfile}") optional true  into g108_9_igblastOut0_g108_12
+
+script:
+num_threads = params.First_Alignment_IgBlastn.num_threads
+ig_seqtype = params.First_Alignment_IgBlastn.ig_seqtype
+outfmt = params.First_Alignment_IgBlastn.outfmt
+num_alignments_V = params.First_Alignment_IgBlastn.num_alignments_V
+domain_system = params.First_Alignment_IgBlastn.domain_system
+auxiliary_data = params.First_Alignment_IgBlastn.auxiliary_data
+
+randomString = org.apache.commons.lang.RandomStringUtils.random(9, true, true)
+outname = name + "_" + randomString
+outfile = (outfmt=="MakeDb") ? name+"_"+randomString+".out" : name+"_"+randomString+".tsv"
+outfmt = (outfmt=="MakeDb") ? "'7 std qseq sseq btop'" : "19"
+
+if(db_v.toString()!="" && db_d.toString()!="" && db_j.toString()!=""){
+	"""
+	igblastn -query ${fastaFile} \
+		-germline_db_V ${db_v}/${db_v} \
+		-germline_db_D ${db_d}/${db_d} \
+		-germline_db_J ${db_j}/${db_j} \
+		-num_alignments_V ${num_alignments_V} \
+		-domain_system imgt \
+		-auxiliary_data ${auxiliary_data} \
+		-outfmt ${outfmt} \
+		-num_threads ${num_threads} \
+		-out ${outfile}
+	"""
+}else{
+	"""
+	"""
+}
+
+}
+
+
+process First_Alignment_MakeDb {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-pass.tsv$/) "initial_annotation/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_db-fail.tsv$/) "initial_annotation/$filename"}
+input:
+ set val(name),file(fastaFile) from g_96_fastaFile_g108_12
+ set val(name_igblast),file(igblastOut) from g108_9_igblastOut0_g108_12
+ set val(name1), file(v_germline_file) from g_2_germlineFastaFile_g108_12
+ set val(name2), file(d_germline_file) from g_3_germlineFastaFile_g108_12
+ set val(name3), file(j_germline_file) from g_4_germlineFastaFile_g108_12
+
+output:
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g108_12_outputFileTSV0_g108_52
+ set val("reference_set"), file("${reference_set}") optional true  into g108_12_germlineFastaFile11
+ set val(name_igblast),file("*_db-fail.tsv") optional true  into g108_12_outputFileTSV22
+
+script:
+
+failed = params.First_Alignment_MakeDb.failed
+format = params.First_Alignment_MakeDb.format
+regions = params.First_Alignment_MakeDb.regions
+extended = params.First_Alignment_MakeDb.extended
+asisid = params.First_Alignment_MakeDb.asisid
+asiscalls = params.First_Alignment_MakeDb.asiscalls
+inferjunction = params.First_Alignment_MakeDb.inferjunction
+partial = params.First_Alignment_MakeDb.partial
+name_alignment = params.First_Alignment_MakeDb.name_alignment
+
+failed = (failed=="true") ? "--failed" : ""
+format = (format=="changeo") ? "--format changeo" : ""
+extended = (extended=="true") ? "--extended" : ""
+regions = (regions=="rhesus-igl") ? "--regions rhesus-igl" : ""
+asisid = (asisid=="true") ? "--asis-id" : ""
+asiscalls = (asiscalls=="true") ? "--asis-calls" : ""
+inferjunction = (inferjunction=="true") ? "--infer-junction" : ""
+partial = (partial=="true") ? "--partial" : ""
+
+reference_set = "reference_set_makedb_"+name_alignment+".fasta"
+
+outname = name_igblast+'_'+name_alignment
+
+if(igblastOut.getName().endsWith(".out")){
+	"""
+	
+	cat ${v_germline_file} ${d_germline_file} ${j_germline_file} > ${reference_set}
+	
+	MakeDb.py igblast \
+		-s ${fastaFile} \
+		-i ${igblastOut} \
+		-r ${v_germline_file} ${d_germline_file} ${j_germline_file} \
+		--log MD_${name}.log \
+		--outname ${outname}\
+		${extended} \
+		${failed} \
+		${format} \
+		${regions} \
+		${asisid} \
+		${asiscalls} \
+		${inferjunction} \
+		${partial}
+	"""
+}else{
+	"""
+	
+	"""
+}
+
+}
+
+
+process First_Alignment_Collapse_AIRRseq_V2 {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
+input:
+ set val(name),file(airrSeq) from g108_12_outputFileTSV0_g108_52
+
+output:
+ set val(name), file("${outfile}"+"passed.tsv")  into g108_52_outputFileTSV0_g_80, g108_52_outputFileTSV0_g_8
+
+script:
+duplicate_count_min = params.First_Alignment_Collapse_AIRRseq_V2.duplicate_count_min
+n_max = params.First_Alignment_Collapse_AIRRseq_V2.n_max
+name_alignment = params.First_Alignment_Collapse_AIRRseq_V2.name_alignment
+ncores = params.First_Alignment_Collapse_AIRRseq_V2.ncores
+
+outfile = airrSeq.toString() - '.tsv' + name_alignment + "_collapsed-"
+logFile = name+'_process_log.txt'
+if(airrSeq.getName().endsWith(".tsv")){	
+	"""
+	#!/usr/bin/env Rscript
+	# Load necessary libraries
+	library(data.table)
+	library(tigger)
+	library(parallel)
+	library(pbmcapply)
+	
+	# Define input and log file paths
+	airrSeq <- "${airrSeq}"
+	log_file <- "${logFile}"
+	sample_name <- "${name}"
+	
+	# Define a logging function to print to both console and file
+	log_message <- function(message) {
+	  cat(message, "\n")                    # Print to console
+	  cat(message, "\n", file = log_file, append = TRUE)  # Append to log file
+	}
+	
+	# Start the log
+	log_message("START > CollapseSeq")
+	log_message(paste("FILE >", airrSeq))
+	
+	# Load data and count sequences
+	data_sample <- fread(airrSeq)
+	log_message(paste("SEQUENCES >", nrow(data_sample)))
+	
+	# Process sequence data
+	data_sample[, replicate := stringi::stri_extract(sequence_id, regex = "rep[0-9]+")]
+	data_sample[, sequence_start := stringi::stri_locate_first(sequence_alignment, regex = "[ATCGN]")[,1]]
+	qv <- quantile(data_sample[['sequence_start']], probs = c(0.95, 0.99))
+	qj <- quantile(data_sample[['j_germline_end']], probs = c(0.95, 0.99))
+	data_sample[, sequence_end := (j_germline_end - qj[2])]
+	data_sample[, sequence_end := ifelse(sequence_end < 0, 0, sequence_end)]
+	data_sample[, sequence_trimmed := paste0(paste0(rep(".", (qv[2] - 1)), collapse = ""),
+	                                         substr(sequence_alignment, qv[2], (nchar(sequence_alignment) - sequence_end)))]
+	data_sample[, sequence_start_trimmed := stringi::stri_locate_first(sequence_trimmed, regex = "[ATCGN]")[,1]]
+	data_sample[, v_gene := alakazam::getGene(v_call, strip_d = FALSE, collapse = TRUE, first = FALSE)]
+	data_sample[, j_gene := alakazam::getGene(j_call, strip_d = FALSE, collapse = TRUE, first = FALSE)]
+	data_sample_filtered <- data_sample[sequence_start_trimmed >= qv[2] & !grepl("-", sequence_trimmed) &
+	                                    !grepl(",", v_gene) & !grepl(",", j_gene)]
+	
+	# Log filtered sequence count
+	log_message(paste("SEQUENCES TO COLLAPSE>", nrow(data_sample_filtered)))
+	
+	# Prepare headers and sequences for collapsing
+	data_sample_filtered[, group_id := paste(v_gene, junction_length, j_gene, sep = "_")]
+	data_sample_filtered[, header := paste(sequence_id, paste0("replicate=", replicate), paste0("GROUP_ID=", group_id), sep="|")]
+	data_sample_filtered[, sequence_collapse := gsub("[.]", "", sequence_trimmed)]
+	
+	# Define the main function to process each group
+	process_group <- function(group) {
+	  data_sample_sub <- data_sample_filtered[group_id == group]
+	  seqs <- data_sample_sub[['sequence_collapse']]
+	  seqs <- setNames(seqs, data_sample_sub[['header']])
+	  file <- paste0(group, ".fasta")
+	  tigger::writeFasta(seqs, file = file)
+	  system(paste("CollapseSeq.py -s", file, "--fasta -n","${n_max}","--uf 'CLUSTER_ID' --cf 'replicate' --act set"),
+	         ignore.stdout = TRUE, ignore.stderr = TRUE)
+	  file.remove(file)
+	  return(group)
+	}
+	
+	if("${ncores}"==""){
+		num_cores <- detectCores() - 1
+	}else{
+		num_cores <- as.numeric("${ncores}")
+	}
+	
+	# Run process_group in parallel
+	results <- pbmcapply::pbmclapply(unique(data_sample_filtered[['group_id']]), process_group, mc.cores = num_cores, ignore.interactive=TRUE)
+	
+	# Concatenate all output files
+	file <- paste0(sample_name, "_collapse-unique_combined.fasta")
+	system(paste0("cat ", "*_collapse-unique.fasta > ", file))
+	system("rm *_collapse-unique.fasta")
+	sequences_collapsed <- as.integer(strsplit(system(paste("grep -c '>'", file), intern = TRUE), " ")[[1]][1])
+	log_message(paste("SEQUENCES COLLAPSED >", sequences_collapsed))
+	
+	# Run SplitSeq.py and get the count of duplicates
+	#system(paste("SplitSeq.py group -s", file, "-f DUPCOUNT --num 2"), ignore.stdout = TRUE, ignore.stderr = TRUE)
+	#file_atleast_2 <- paste0(sample_name, "_collapse-unique_atleast-2.fasta")
+	
+	# Count and log the sequence numbers for duplicate and replicate filtered files
+	#sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), " ")[[1]][1])
+	#log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
+	
+	
+	# Read collapsed sequences
+	collapsed_seq <- tigger::readIgFasta(file, strip_down_name = FALSE)
+	sequence_ids <- sapply(strsplit(names(collapsed_seq), "[|]"), "[[", 1)
+	data_sample_collapsed <- data_sample[sequence_id %in% sequence_ids]
+	
+	# Add values from headers as columns
+	header_info <- lapply(names(collapsed_seq), function(header) {
+	  parts <- unlist(strsplit(header, "[|]"))
+	  info <- sapply(parts[-1], function(part) {
+	    kv <- unlist(strsplit(part, "="))
+	    if (length(kv) == 2) kv[2] else NA
+	  })
+	  names(info) <- sapply(parts[-1], function(part) unlist(strsplit(part, "="))[1])
+	  info
+	})
+	header_info_df <- as.data.frame(do.call(rbind, header_info), stringsAsFactors = FALSE)
+	header_info_df[['sequence_id']] <- sequence_ids
+	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
+	
+	data_sample_collapsed <- data_sample_collapsed[as.numeric(DUPCOUNT)>1,]
+	sequences_duplicate_2 <- nrow(data_sample_collapsed)
+	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
+	
+	data_sample_collapsed[,replicate_count:=(stringi::stri_count_fixed(REPLICATE, pattern=",")+1)]
+	data_sample_collapsed <- data_sample_collapsed[replicate_count>1,]
+	sequences_replicate_2 <- nrow(data_sample_collapsed)
+	log_message(paste("SEQUENCES REPLICATE>=2 >", sequences_replicate_2))
+	# Filter for productive sequences with J gene and log the final count
+	data_sample_collapsed_filtered <- data_sample_collapsed[as.logical(productive) == TRUE & grepl("J", j_call),]
+	
+	fwrite(data_sample_collapsed_filtered, file = paste0("${outfile}","passed.tsv"), sep = "\t", quote = F, row.names = F)
+	
+	log_message(paste("SEQUENCES COLLAPSED PRODUCTIVE >", nrow(data_sample_collapsed_filtered)))
+	
+	log_message("Process complete.")
+
+	
+	"""
+}else{
+	"""
+	
+	"""
+}
+
+}
 
 if(params.container.startsWith("peresay")){
 	cmd = 'source("/usr/local/bin/functions_tigger.R")'
@@ -173,6 +567,7 @@ process Undocumented_Alleles {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*novel-passed.tsv$/) "novel_report/$filename"}
 input:
+ set val(name),file(airr_file) from g108_52_outputFileTSV0_g_8
  set val(v_germline_name), file(v_germline_file) from g_2_germlineFastaFile_g_8
 
 output:
@@ -460,59 +855,10 @@ if(germlineFile.getName().endsWith("fasta")){
 }
 
 
-process Second_Alignment_D_MakeBlastDb {
-
-input:
- set val(db_name), file(germlineFile) from g_3_germlineFastaFile_g11_16
-
-output:
- file "${db_name}"  into g11_16_germlineDb0_g11_9
-
-script:
-
-if(germlineFile.getName().endsWith("fasta")){
-	"""
-	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
-	mkdir -m777 ${db_name}
-	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
-	"""
-}else{
-	"""
-	echo something if off
-	"""
-}
-
-}
-
-
-process Second_Alignment_J_MakeBlastDb {
-
-input:
- set val(db_name), file(germlineFile) from g_4_germlineFastaFile_g11_17
-
-output:
- file "${db_name}"  into g11_17_germlineDb0_g11_9
-
-script:
-
-if(germlineFile.getName().endsWith("fasta")){
-	"""
-	sed -e '/^>/! s/[.]//g' ${germlineFile} > tmp_germline.fasta
-	mkdir -m777 ${db_name}
-	makeblastdb -parse_seqids -dbtype nucl -in tmp_germline.fasta -out ${db_name}/${db_name}
-	"""
-}else{
-	"""
-	echo something if off
-	"""
-}
-
-}
-
-
 process airrseq_to_fasta {
 
 input:
+ set val(name), file(airrseq_data) from g108_52_outputFileTSV0_g_80
 
 output:
  set val(name), file(outfile)  into g_80_germlineFastaFile0_g11_12, g_80_germlineFastaFile0_g11_9, g_80_germlineFastaFile0_g21_12, g_80_germlineFastaFile0_g21_9
