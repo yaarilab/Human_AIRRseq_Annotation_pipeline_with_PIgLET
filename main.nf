@@ -409,11 +409,15 @@ if(igblastOut.getName().endsWith(".out")){
 process First_Alignment_Collapse_AIRRseq_V2 {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_process_log.txt$/) "initial_annotation/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+unfiltered.tsv$/) "initial_annotation/$filename"}
 input:
  set val(name),file(airrSeq) from g108_12_outputFileTSV0_g108_52
 
 output:
  set val(name), file("${outfile}"+"passed.tsv")  into g108_52_outputFileTSV0_g_80, g108_52_outputFileTSV0_g_8
+ file file("*_process_log.txt") optional true  into g108_52_outputFileTxt11
+ set val(name), file("${outfile}"+"unfiltered.tsv") optional true  into g108_52_outputFileTSV22
 
 script:
 duplicate_count_min = params.First_Alignment_Collapse_AIRRseq_V2.duplicate_count_min
@@ -454,16 +458,16 @@ if(airrSeq.getName().endsWith(".tsv")){
 	# Process sequence data
 	data_sample[, replicate := stringi::stri_extract(sequence_id, regex = "rep[0-9]+")]
 	data_sample[, sequence_start := stringi::stri_locate_first(sequence_alignment, regex = "[ATCGN]")[,1]]
-	qv <- quantile(data_sample[['sequence_start']], probs = c(0.95, 0.99))
-	qj <- quantile(data_sample[['j_germline_end']], probs = c(0.95, 0.99))
-	data_sample[, sequence_end := (j_germline_end - qj[2])]
+	qv <- floor(quantile(data_sample[['sequence_start']], probs = 0.99))
+	qj <- floor(quantile(data_sample[['j_germline_end']], probs = 0.99))
+	data_sample[, sequence_end := (j_germline_end - qj)]
 	data_sample[, sequence_end := ifelse(sequence_end < 0, 0, sequence_end)]
-	data_sample[, sequence_trimmed := paste0(paste0(rep(".", (qv[2] - 1)), collapse = ""),
-	                                         substr(sequence_alignment, qv[2], (nchar(sequence_alignment) - sequence_end)))]
+	data_sample[, sequence_trimmed := paste0(paste0(rep(".", (qv - 1)), collapse = ""),
+	                                         substr(sequence_alignment, qv, (nchar(sequence_alignment) - sequence_end)))]
 	data_sample[, sequence_start_trimmed := stringi::stri_locate_first(sequence_trimmed, regex = "[ATCGN]")[,1]]
 	data_sample[, v_gene := alakazam::getGene(v_call, strip_d = FALSE, collapse = TRUE, first = FALSE)]
 	data_sample[, j_gene := alakazam::getGene(j_call, strip_d = FALSE, collapse = TRUE, first = FALSE)]
-	data_sample_filtered <- data_sample[sequence_start_trimmed >= qv[2] & !grepl("-", sequence_trimmed) &
+	data_sample_filtered <- data_sample[sequence_start_trimmed >= qv & !grepl("-", sequence_trimmed) &
 	                                    !grepl(",", v_gene) & !grepl(",", j_gene)]
 	
 	# Log filtered sequence count
@@ -531,6 +535,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	header_info_df[['sequence_id']] <- sequence_ids
 	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
 	
+	fwrite(data_sample_collapsed_filtered, file = paste0("${outfile}","unfiltered.tsv"), sep = "\t", quote = F, row.names = F)
 	data_sample_collapsed <- data_sample_collapsed[as.numeric(DUPCOUNT)>1,]
 	sequences_duplicate_2 <- nrow(data_sample_collapsed)
 	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
