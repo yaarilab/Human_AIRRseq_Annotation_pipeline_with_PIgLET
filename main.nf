@@ -298,7 +298,7 @@ input:
  set val(name3), file(j_germline_file) from g_4_germlineFastaFile_g0_12
 
 output:
- set val(name_igblast),file("*_db-pass.tsv") optional true  into g0_12_outputFileTSV0_g0_51
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g0_12_outputFileTSV0_g0_52
  set val("reference_set"), file("${reference_set}") optional true  into g0_12_germlineFastaFile11
  set val(name_igblast),file("*_db-fail.tsv") optional true  into g0_12_outputFileTSV22
 
@@ -360,10 +360,10 @@ process First_Alignment_Collapse_AIRRseq_V2 {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
 input:
- set val(nameFile),file(airrSeq) from g0_12_outputFileTSV0_g0_51
+ set val(name),file(airrSeq) from g0_12_outputFileTSV0_g0_52
 
 output:
- set val(name), file("${outfile}"+"passed.tsv") optional true  into g0_51_outputFileTSV0_g_8, g0_51_outputFileTSV0_g_80
+ set val(name), file("${outfile}"+"passed.tsv")  into g0_52_outputFileTSV0_g_8, g0_52_outputFileTSV0_g_80
 
 script:
 duplicate_count_min = params.First_Alignment_Collapse_AIRRseq_V2.duplicate_count_min
@@ -372,7 +372,7 @@ name_alignment = params.First_Alignment_Collapse_AIRRseq_V2.name_alignment
 ncores = params.First_Alignment_Collapse_AIRRseq_V2.ncores
 
 outfile = airrSeq.toString() - '.tsv' + name_alignment + "_collapsed-"
-logFile = nameFile+'_process_log.txt'
+logFile = name+'_process_log.txt'
 if(airrSeq.getName().endsWith(".tsv")){	
 	"""
 	#!/usr/bin/env Rscript
@@ -385,7 +385,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	# Define input and log file paths
 	airrSeq <- "${airrSeq}"
 	log_file <- "${logFile}"
-	name <- "${nameFile}"
+	sample_name <- "${name}"
 	
 	# Define a logging function to print to both console and file
 	log_message <- function(message) {
@@ -447,7 +447,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	results <- pbmcapply::pbmclapply(unique(data_sample_filtered[['group_id']]), process_group, mc.cores = num_cores, ignore.interactive=TRUE)
 	
 	# Concatenate all output files
-	file <- paste0(name, "_collapse-unique_combined.fasta")
+	file <- paste0(sample_name, "_collapse-unique_combined.fasta")
 	system(paste0("cat ", "*_collapse-unique.fasta > ", file))
 	system("rm *_collapse-unique.fasta")
 	sequences_collapsed <- as.integer(strsplit(system(paste("grep -c '>'", file), intern = TRUE), " ")[[1]][1])
@@ -455,7 +455,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	
 	# Run SplitSeq.py and get the count of duplicates
 	#system(paste("SplitSeq.py group -s", file, "-f DUPCOUNT --num 2"), ignore.stdout = TRUE, ignore.stderr = TRUE)
-	#file_atleast_2 <- paste0(name, "_collapse-unique_atleast-2.fasta")
+	#file_atleast_2 <- paste0(sample_name, "_collapse-unique_atleast-2.fasta")
 	
 	# Count and log the sequence numbers for duplicate and replicate filtered files
 	#sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), " ")[[1]][1])
@@ -517,7 +517,7 @@ process Undocumented_Alleles {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*novel-passed.tsv$/) "novel_report/$filename"}
 input:
- set val(name),file(airr_file) from g0_51_outputFileTSV0_g_8
+ set val(name),file(airr_file) from g0_52_outputFileTSV0_g_8
  set val(v_germline_name), file(v_germline_file) from g_2_germlineFastaFile_g_8
 
 output:
@@ -808,7 +808,7 @@ if(germlineFile.getName().endsWith("fasta")){
 process airrseq_to_fasta {
 
 input:
- set val(name), file(airrseq_data) from g0_51_outputFileTSV0_g_80
+ set val(name), file(airrseq_data) from g0_52_outputFileTSV0_g_80
 
 output:
  set val(name), file(outfile)  into g_80_germlineFastaFile0_g11_12, g_80_germlineFastaFile0_g11_9, g_80_germlineFastaFile0_g21_12, g_80_germlineFastaFile0_g21_9
