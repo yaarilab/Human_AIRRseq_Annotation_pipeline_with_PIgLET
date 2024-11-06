@@ -394,12 +394,12 @@ if(airrSeq.getName().endsWith(".tsv")){
 	}
 	
 	# Start the log
-	log_message("START> CollapseSeq")
-	log_message(paste("FILE>", airrSeq))
+	log_message("START > CollapseSeq")
+	log_message(paste("FILE >", airrSeq))
 	
 	# Load data and count sequences
 	data_sample <- fread(airrSeq)
-	log_message(paste("SEQUENCES>", nrow(data_sample)))
+	log_message(paste("SEQUENCES >", nrow(data_sample)))
 	
 	# Process sequence data
 	data_sample[, replicate := stringi::stri_extract(sequence_id, regex = "rep[0-9]+")]
