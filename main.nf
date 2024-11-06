@@ -447,26 +447,20 @@ if(airrSeq.getName().endsWith(".tsv")){
 	results <- pbmcapply::pbmclapply(unique(data_sample_filtered[['group_id']]), process_group, mc.cores = num_cores, ignore.interactive=TRUE)
 	
 	# Concatenate all output files
-	file <- paste0(name, "_collapse-unique.fasta")
+	file <- paste0(name, "_collapse-unique_combined.fasta")
 	system(paste0("cat ", "*_collapse-unique.fasta > ", file))
-	sequences_collapsed <- as.integer(strsplit(system(paste("grep -c '>'", file), intern = TRUE), "")[[1]][1])
+	system("rm *_collapse-unique.fasta")
+	sequences_collapsed <- as.integer(strsplit(system(paste("grep -c '>'", file), intern = TRUE), " ")[[1]][1])
 	log_message(paste("SEQUENCES COLLAPSED >", sequences_collapsed))
 	
 	# Run SplitSeq.py and get the count of duplicates
 	system(paste("SplitSeq.py group -s", file, "-f DUPCOUNT --num 2"), ignore.stdout = TRUE, ignore.stderr = TRUE)
 	file_atleast_2 <- paste0(name, "_collapse-unique_atleast-2.fasta")
-	file_replicate_2 <- paste0(name, "_collapse-unique_atleast-2_replicate-2.fasta")
-	
-	# Filter sequences with `REPLICATE` containing a comma
-	system(paste("awk '/^>/ {if (match(\$0, /REPLICATE=.*,/)) {print_flag=1} else {print_flag=0}} print_flag {print}'",
-	             file_atleast_2, ">", file_replicate_2), ignore.stdout = TRUE, ignore.stderr = TRUE)
 	
 	# Count and log the sequence numbers for duplicate and replicate filtered files
-	sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), "")[[1]][1])
-	sequences_replicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_replicate_2), intern = TRUE), "")[[1]][1])
-	
+	sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), " ")[[1]][1])
 	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
-	log_message(paste("SEQUENCES REPLICATE>=2 >", sequences_replicate_2))
+	
 	
 	# Read collapsed sequences
 	collapsed_seq <- tigger::readIgFasta(file_replicate_2, strip_down_name = FALSE)
@@ -487,6 +481,10 @@ if(airrSeq.getName().endsWith(".tsv")){
 	header_info_df[['sequence_id']] <- sequence_ids
 	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
 	
+	data_sample_collapsed[,replicate_count:=(stringi::stri_count_fixed(REPLICATE, pattern=",")+1)]
+	data_sample_collapsed <- data_sample_collapsed[replicate_count>1,]
+	sequences_replicate_2 <- nrow(replicate_count)
+	log_message(paste("SEQUENCES REPLICATE>=2 >", sequences_replicate_2))
 	# Filter for productive sequences with J gene and log the final count
 	data_sample_collapsed_filtered <- data_sample_collapsed[as.logical(productive) == TRUE & grepl("J", j_call),]
 	
