@@ -482,12 +482,12 @@ if(airrSeq.getName().endsWith(".tsv")){
 	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
 	
 	data_sample_collapsed <- data_sample_collapsed[as.numeric(DUPCOUNT)>1,]
-	sequences_duplicate_2 <- nrow(replicate_count)
+	sequences_duplicate_2 <- nrow(data_sample_collapsed)
 	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
 	
 	data_sample_collapsed[,replicate_count:=(stringi::stri_count_fixed(REPLICATE, pattern=",")+1)]
 	data_sample_collapsed <- data_sample_collapsed[replicate_count>1,]
-	sequences_replicate_2 <- nrow(replicate_count)
+	sequences_replicate_2 <- nrow(data_sample_collapsed)
 	log_message(paste("SEQUENCES REPLICATE>=2 >", sequences_replicate_2))
 	# Filter for productive sequences with J gene and log the final count
 	data_sample_collapsed_filtered <- data_sample_collapsed[as.logical(productive) == TRUE & grepl("J", j_call),]
