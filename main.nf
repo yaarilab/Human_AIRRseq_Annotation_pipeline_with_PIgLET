@@ -25,6 +25,7 @@ params.First_Alignment_MakeDb.name_alignment = "First_Alignment"
 // Process Parameters for First_Alignment_Collapse_AIRRseq:
 params.First_Alignment_Collapse_AIRRseq_V2.name_alignment = "First_Alignment"
 params.First_Alignment_Collapse_AIRRseq_V2.n_max = 10
+params.First_Alignment_Collapse_AIRRseq_V2.ncores = 10
 
 // Process Parameters for Undocumented_Alleles:
 params.Undocumented_Alleles.chain = params.chain
