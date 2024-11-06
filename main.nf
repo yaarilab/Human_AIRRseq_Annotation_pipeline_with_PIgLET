@@ -454,16 +454,16 @@ if(airrSeq.getName().endsWith(".tsv")){
 	log_message(paste("SEQUENCES COLLAPSED >", sequences_collapsed))
 	
 	# Run SplitSeq.py and get the count of duplicates
-	system(paste("SplitSeq.py group -s", file, "-f DUPCOUNT --num 2"), ignore.stdout = TRUE, ignore.stderr = TRUE)
-	file_atleast_2 <- paste0(name, "_collapse-unique_atleast-2.fasta")
+	#system(paste("SplitSeq.py group -s", file, "-f DUPCOUNT --num 2"), ignore.stdout = TRUE, ignore.stderr = TRUE)
+	#file_atleast_2 <- paste0(name, "_collapse-unique_atleast-2.fasta")
 	
 	# Count and log the sequence numbers for duplicate and replicate filtered files
-	sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), " ")[[1]][1])
-	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
+	#sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), " ")[[1]][1])
+	#log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
 	
 	
 	# Read collapsed sequences
-	collapsed_seq <- tigger::readIgFasta(file_replicate_2, strip_down_name = FALSE)
+	collapsed_seq <- tigger::readIgFasta(file, strip_down_name = FALSE)
 	sequence_ids <- sapply(strsplit(names(collapsed_seq), "[|]"), "[[", 1)
 	data_sample_collapsed <- data_sample[sequence_id %in% sequence_ids]
 	
@@ -480,6 +480,10 @@ if(airrSeq.getName().endsWith(".tsv")){
 	header_info_df <- as.data.frame(do.call(rbind, header_info), stringsAsFactors = FALSE)
 	header_info_df[['sequence_id']] <- sequence_ids
 	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
+	
+	data_sample_collapsed <- data_sample_collapsed[as.numeric(DUPCOUNT)>1,]
+	sequences_duplicate_2 <- nrow(replicate_count)
+	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
 	
 	data_sample_collapsed[,replicate_count:=(stringi::stri_count_fixed(REPLICATE, pattern=",")+1)]
 	data_sample_collapsed <- data_sample_collapsed[replicate_count>1,]
