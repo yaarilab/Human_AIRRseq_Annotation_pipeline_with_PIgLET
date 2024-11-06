@@ -444,7 +444,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	}
 	
 	# Run process_group in parallel
-	results <- pbmcapply::pbmclapply(unique(data_sample_filtered[['group_id']]), process_group, mc.cores = num_cores)
+	results <- pbmcapply::pbmclapply(unique(data_sample_filtered[['group_id']]), process_group, mc.cores = num_cores, ignore.interactive=TRUE)
 	
 	# Concatenate all output files
 	file <- paste0(name, "_collapse-unique.fasta")
