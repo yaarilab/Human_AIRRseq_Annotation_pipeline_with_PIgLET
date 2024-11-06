@@ -404,7 +404,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	data_sample[, replicate := stringi::stri_extract(sequence_id, regex = "rep[0-9]+")]
 	data_sample[, sequence_start := stringi::stri_locate_first(sequence_alignment, regex = "[ATCGN]")[,1]]
 	qv <- quantile(data_sample[['sequence_start']], probs = c(0.95, 0.99))
-	qj <- quantile(data_sample[['j_germline_end]], probs = c(0.95, 0.99))
+	qj <- quantile(data_sample[['j_germline_end']], probs = c(0.95, 0.99))
 	data_sample[, sequence_end := (j_germline_end - qj[2])]
 	data_sample[, sequence_end := ifelse(sequence_end < 0, 0, sequence_end)]
 	data_sample[, sequence_trimmed := paste0(paste0(rep(".", (qv[2] - 1)), collapse = ""),
