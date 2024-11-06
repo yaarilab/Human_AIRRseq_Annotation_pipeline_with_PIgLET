@@ -25,7 +25,7 @@ params.First_Alignment_MakeDb.name_alignment = "First_Alignment"
 // Process Parameters for First_Alignment_Collapse_AIRRseq:
 params.First_Alignment_Collapse_AIRRseq_V2.name_alignment = "First_Alignment"
 params.First_Alignment_Collapse_AIRRseq_V2.n_max = 10
-params.First_Alignment_Collapse_AIRRseq_V2.ncores = 10
+params.First_Alignment_Collapse_AIRRseq_V2.ncores = 20
 
 // Process Parameters for Undocumented_Alleles:
 params.Undocumented_Alleles.chain = params.chain
@@ -535,7 +535,7 @@ if(airrSeq.getName().endsWith(".tsv")){
 	header_info_df[['sequence_id']] <- sequence_ids
 	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
 	
-	fwrite(data_sample_collapsed_filtered, file = paste0("${outfile}","unfiltered.tsv"), sep = "\t", quote = F, row.names = F)
+	fwrite(data_sample_collapsed, file = paste0("${outfile}","unfiltered.tsv"), sep = "\t", quote = F, row.names = F)
 	data_sample_collapsed <- data_sample_collapsed[as.numeric(DUPCOUNT)>1,]
 	sequences_duplicate_2 <- nrow(data_sample_collapsed)
 	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
