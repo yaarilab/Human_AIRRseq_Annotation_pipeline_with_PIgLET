@@ -23,10 +23,8 @@ params.First_Alignment_MakeDb.partial = "false"
 params.First_Alignment_MakeDb.name_alignment = "First_Alignment"
 
 // Process Parameters for First_Alignment_Collapse_AIRRseq:
-params.First_Alignment_Collapse_AIRRseq.name_alignment = "First_Alignment"
-params.First_Alignment_Collapse_AIRRseq.collapse_replicate = "true"
-params.First_Alignment_Collapse_AIRRseq.replicate_tag = "_M0"
-
+params.First_Alignment_Collapse_AIRRseq_V2.name_alignment = "First_Alignment"
+params.First_Alignment_Collapse_AIRRseq_V2.n_max = 10
 
 // Process Parameters for Undocumented_Alleles:
 params.Undocumented_Alleles.chain = params.chain
@@ -299,7 +297,7 @@ input:
  set val(name3), file(j_germline_file) from g_4_germlineFastaFile_g0_12
 
 output:
- set val(name_igblast),file("*_db-pass.tsv") optional true  into g0_12_outputFileTSV0_g0_19
+ set val(name_igblast),file("*_db-pass.tsv") optional true  into g0_12_outputFileTSV0_g0_51
  set val("reference_set"), file("${reference_set}") optional true  into g0_12_germlineFastaFile11
  set val(name_igblast),file("*_db-fail.tsv") optional true  into g0_12_outputFileTSV22
 
@@ -357,277 +355,145 @@ if(igblastOut.getName().endsWith(".out")){
 }
 
 
-process First_Alignment_Collapse_AIRRseq {
+process First_Alignment_Collapse_AIRRseq_V2 {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+failed.*$/) "initial_annotation/$filename"}
 input:
- set val(name),file(airrFile) from g0_12_outputFileTSV0_g0_19
+ set val(nameFile),file(airrSeq) from g0_12_outputFileTSV0_g0_51
 
 output:
- set val(name), file("${outfile}"+"passed.tsv") optional true  into g0_19_outputFileTSV0_g_80, g0_19_outputFileTSV0_g_8
- set val(name), file("${outfile}"+"failed*") optional true  into g0_19_outputFileTSV11
+ set val(name), file("${outfile}"+"passed.tsv") optional true  into g0_51_outputFileTSV0_g_8, g0_51_outputFileTSV0_g_80
 
 script:
-conscount_min = params.First_Alignment_Collapse_AIRRseq.conscount_min
-n_max = params.First_Alignment_Collapse_AIRRseq.n_max
-name_alignment = params.First_Alignment_Collapse_AIRRseq.name_alignment
-collapse_replicate = params.First_Alignment_Collapse_AIRRseq.collapse_replicate
-replicate_tag = params.First_Alignment_Collapse_AIRRseq.replicate_tag
+duplicate_count_min = params.First_Alignment_Collapse_AIRRseq_V2.duplicate_count_min
+n_max = params.First_Alignment_Collapse_AIRRseq_V2.n_max
+name_alignment = params.First_Alignment_Collapse_AIRRseq_V2.name_alignment
+ncores = params.First_Alignment_Collapse_AIRRseq_V2.ncores
 
 outfile = airrFile.toString() - '.tsv' + name_alignment + "_collapsed-"
-
+logFile = nameFile+'_process_log.txt'
 if(airrFile.getName().endsWith(".tsv")){	
 	"""
-	#!/usr/bin/env python3
+	# Load necessary libraries
+	library(data.table)
+	library(tigger)
+	library(parallel)
+	library(pbmcapply)
 	
-	from pprint import pprint
-	from collections import OrderedDict,Counter
-	import itertools as it
-	import datetime
-	import pandas as pd
-	import glob, os
-	import numpy as np
-	import re
+	# Define input and log file paths
+	airrSeq <- "${airrSeq}"
+	log_file <- "${logFile}"
+	name <- "${nameFile}"
 	
-	# column types default
+	# Define a logging function to print to both console and file
+	log_message <- function(message) {
+	  cat(message, "\n")                    # Print to console
+	  cat(message, "\n", file = log_file, append = TRUE)  # Append to log file
+	}
 	
-	# dtype_default={'junction_length': 'Int64', 'np1_length': 'Int64', 'np2_length': 'Int64', 'v_sequence_start': 'Int64', 'v_sequence_end': 'Int64', 'v_germline_start': 'Int64', 'v_germline_end': 'Int64', 'd_sequence_start': 'Int64', 'd_sequence_end': 'Int64', 'd_germline_start': 'Int64', 'd_germline_end': 'Int64', 'j_sequence_start': 'Int64', 'j_sequence_end': 'Int64', 'j_germline_start': 'Int64', 'j_germline_end': 'Int64', 'v_score': 'Int64', 'v_identity': 'Int64', 'v_support': 'Int64', 'd_score': 'Int64', 'd_identity': 'Int64', 'd_support': 'Int64', 'j_score': 'Int64', 'j_identity': 'Int64', 'j_support': 'Int64'}
+	# Start the log
+	log_message("START> CollapseSeq")
+	log_message(paste("FILE>", airrSeq))
 	
-	SPLITSIZE=2
+	# Load data and count sequences
+	data_sample <- fread(airrSeq)
+	log_message(paste("SEQUENCES>", nrow(data_sample)))
 	
-	class CollapseDict:
-	    def __init__(self,iterable=(),_depth=0,
-	                 nlim=10,conscount_flag=False):
-	        self.lowqual={}
-	        self.seqs = {}
-	        self.children = {}
-	        self.depth=_depth
-	        self.nlim=nlim
-	        self.conscount=conscount_flag
-	        for fseq in iterable:
-	            self.add(fseq)
+	# Process sequence data
+	data_sample[, replicate := stringi::stri_extract(sequence_id, regex = "rep[0-9]+")]
+	data_sample[, sequence_start := stringi::stri_locate_first(sequence_alignment, regex = "[ATCGN]")[,1]]
+	qv <- quantile(data_sample[['sequence_start']], probs = c(0.95, 0.99))
+	qj <- quantile(data_sample[['j_germline_end]], probs = c(0.95, 0.99))
+	data_sample[, sequence_end := (j_germline_end - qj[2])]
+	data_sample[, sequence_end := ifelse(sequence_end < 0, 0, sequence_end)]
+	data_sample[, sequence_trimmed := paste0(paste0(rep(".", (qv[2] - 1)), collapse = ""),
+	                                         substr(sequence_alignment, qv[2], (nchar(sequence_alignment) - sequence_end)))]
+	data_sample[, sequence_start_trimmed := stringi::stri_locate_first(sequence_trimmed, regex = "[ATCGN]")[,1]]
+	data_sample[, v_gene := alakazam::getGene(v_call, strip_d = FALSE, collapse = TRUE, first = FALSE)]
+	data_sample[, j_gene := alakazam::getGene(j_call, strip_d = FALSE, collapse = TRUE, first = FALSE)]
+	data_sample_filtered <- data_sample[sequence_start_trimmed >= qv[2] & !grepl("-", sequence_trimmed) &
+	                                    !grepl(",", v_gene) & !grepl(",", j_gene)]
 	
-	    def split(self):
-	        newseqs = {}
-	        for seq in self.seqs:
-	            if len(seq)==self.depth:
-	                newseqs[seq]=self.seqs[seq]
-	            else:
-	                if seq[self.depth] not in self.children:
-	                    self.children[seq[self.depth]] = CollapseDict(_depth=self.depth+1)
-	                self.children[seq[self.depth]].add(self.seqs[seq],seq)
-	        self.seqs=newseqs
+	# Log filtered sequence count
+	log_message(paste("SEQUENCES TO COLLAPSE>", nrow(data_sample_filtered)))
 	
-	    def add(self,fseq,key=None):
-	        #if 'duplicate_count' not in fseq: fseq['duplicate_count']='1'
-	        if 'KEY' not in fseq:
-	            fseq['KEY']=fseq['sequence_vdj'].replace('-','').replace('.','')
-	        if 'ISOTYPECOUNTER' not in fseq:
-	            fseq['ISOTYPECOUNTER']=Counter([fseq['c_call']])
-	        if 'VGENECOUNTER' not in fseq:
-	            fseq['VGENECOUNTER']=Counter([fseq['v_call']])
-	        if 'JGENECOUNTER' not in fseq:
-	            fseq['JGENECOUNTER']=Counter([fseq['j_call']])
-	        if key is None:
-	            key=fseq['KEY']
-	        if self.depth==0:
-	            if (not fseq['j_call'] or not fseq['v_call']):
-	                return
-	            if fseq['sequence_vdj'].count('N')>self.nlim:
-	                if key in self.lowqual:
-	                    self.lowqual[key] = combine(self.lowqual[key],fseq,self.conscount)
-	                else:
-	                    self.lowqual[key] = fseq
-	                return
-	        if len(self.seqs)>SPLITSIZE:
-	            self.split()
-	        if key in self.seqs:
-	            self.seqs[key] = combine(self.seqs[key],fseq,self.conscount)
-	        elif (self.children is not None and
-	              len(key)>self.depth and
-	              key[self.depth] in self.children):
-	            self.children[key[self.depth]].add(fseq,key)
-	        else:
-	            self.seqs[key] = fseq
+	# Prepare headers and sequences for collapsing
+	data_sample_filtered[, group_id := paste(v_gene, junction_length, j_gene, sep = "_")]
+	data_sample_filtered[, header := paste(sequence_id, paste0("replicate=", replicate), paste0("GROUP_ID=", group_id), sep="|")]
+	data_sample_filtered[, sequence_collapse := gsub("[.]", "", sequence_trimmed)]
 	
-	    def __iter__(self):
-	        yield from self.seqs.items()
-	        for d in self.children.values():
-	            yield from d
-	        yield from self.lowqual.items()
+	# Define the main function to process each group
+	process_group <- function(group) {
+	  data_sample_sub <- data_sample_filtered[group_id == group]
+	  seqs <- data_sample_sub[['sequence_collapse']]
+	  seqs <- setNames(seqs, data_sample_sub[['header']])
+	  file <- paste0(group, ".fasta")
+	  tigger::writeFasta(seqs, file = file)
+	  system(paste("CollapseSeq.py -s", file, "--fasta -n","${n_max}","--uf 'CLUSTER_ID' --cf 'replicate' --act set"),
+	         ignore.stdout = TRUE, ignore.stderr = TRUE)
+	  file.remove(file)
+	  return(group)
+	}
 	
-	    def neighbors(self,seq):
-	        def nfil(x): return similar(seq,x)
-	        yield from filter(nfil,self.seqs)
-	        if len(seq)>self.depth:
-	            for d in [self.children[c]
-	                      for c in self.children
-	                      if c=='N' or seq[self.depth]=='N' or c==seq[self.depth]]:
-	                yield from d.neighbors(seq)
+	if("${ncores}"==""){
+		num_cores <- detectCores() - 1
+	}else{
+		num_cores <- as.numeric("${ncores}")
+	}
 	
-	    def fixedseqs(self):
-	        return self
-	        ncd = CollapseDict()
-	        for seq,fseq in self:
-	            newseq=seq
-	            if 'N' in seq:
-	                newseq=consensus(seq,self.neighbors(seq))
-	                fseq['KEY']=newseq
-	            ncd.add(fseq,newseq)
-	        return ncd
+	# Run process_group in parallel
+	results <- pbmcapply::pbmclapply(unique(data_sample_filtered[['group_id']]), process_group, mc.cores = num_cores)
 	
+	# Concatenate all output files
+	file <- paste0(name, "_collapse-unique.fasta")
+	system(paste0("cat ", "*_collapse-unique.fasta > ", file))
+	sequences_collapsed <- as.integer(strsplit(system(paste("grep -c '>'", file), intern = TRUE), "")[[1]][1])
+	log_message(paste("SEQUENCES COLLAPSED >", sequences_collapsed))
 	
-	    def __len__(self):
-	        return len(self.seqs)+sum(len(c) for c in self.children.values())+len(self.lowqual)
+	# Run SplitSeq.py and get the count of duplicates
+	system(paste("SplitSeq.py group -s", file, "-f DUPCOUNT --num 2"), ignore.stdout = TRUE, ignore.stderr = TRUE)
+	file_atleast_2 <- paste0(name, "_collapse-unique_atleast-2.fasta")
+	file_replicate_2 <- paste0(name, "_collapse-unique_atleast-2_replicate-2.fasta")
 	
-	def combine(f1,f2, conscount_flag):
-	    def val(f): return -f['KEY'].count('N'),(int(f['consensus_count']) if 'consensus_count' in f else 0)
-	    targ = (f1 if val(f1) >= val(f2) else f2).copy()
-	    if conscount_flag:
-	        targ['consensus_count'] =  int(f1['consensus_count'])+int(f2['consensus_count'])
-	    targ['duplicate_count'] =  int(f1['duplicate_count'])+int(f2['duplicate_count'])
-	    targ['ISOTYPECOUNTER'] = f1['ISOTYPECOUNTER']+f2['ISOTYPECOUNTER']
-	    targ['VGENECOUNTER'] = f1['VGENECOUNTER']+f2['VGENECOUNTER']
-	    targ['JGENECOUNTER'] = f1['JGENECOUNTER']+f2['JGENECOUNTER']
-	    return targ
+	# Filter sequences with `REPLICATE` containing a comma
+	system(paste("awk '/^>/ {if (match(\$0, /REPLICATE=.*,/)) {print_flag=1} else {print_flag=0}} print_flag {print}'",
+	             file_atleast_2, ">", file_replicate_2), ignore.stdout = TRUE, ignore.stderr = TRUE)
 	
-	def similar(s1,s2):
-	    return len(s1)==len(s2) and all((n1==n2 or n1=='N' or n2=='N')
-	                                  for n1,n2 in zip(s1,s2))
+	# Count and log the sequence numbers for duplicate and replicate filtered files
+	sequences_duplicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_atleast_2), intern = TRUE), "")[[1]][1])
+	sequences_replicate_2 <- as.integer(strsplit(system(paste("grep -c '>'", file_replicate_2), intern = TRUE), "")[[1]][1])
 	
-	def basecon(bases):
-	    bases.discard('N')
-	    if len(bases)==1: return bases.pop()
-	    else: return 'N'
+	log_message(paste("SEQUENCES DUPLICATE>=2 >", sequences_duplicate_2))
+	log_message(paste("SEQUENCES REPLICATE>=2 >", sequences_replicate_2))
 	
-	def consensus(seq,A):
-	    return ''.join((basecon(set(B)) if s=='N' else s) for (s,B) in zip(seq,zip(*A)))
+	# Read collapsed sequences
+	collapsed_seq <- tigger::readIgFasta(file_replicate_2, strip_down_name = FALSE)
+	sequence_ids <- sapply(strsplit(names(collapsed_seq), "[|]"), "[[", 1)
+	data_sample_collapsed <- data_sample[sequence_id %in% sequence_ids]
 	
-	n_lim = int('${n_max}')
-	conscount_filter = int('${conscount_min}')
+	# Add values from headers as columns
+	header_info <- lapply(names(collapsed_seq), function(header) {
+	  parts <- unlist(strsplit(header, "[|]"))
+	  info <- sapply(parts[-1], function(part) {
+	    kv <- unlist(strsplit(part, "="))
+	    if (length(kv) == 2) kv[2] else NA
+	  })
+	  names(info) <- sapply(parts[-1], function(part) unlist(strsplit(part, "="))[1])
+	  info
+	})
+	header_info_df <- as.data.frame(do.call(rbind, header_info), stringsAsFactors = FALSE)
+	header_info_df[['sequence_id']] <- sequence_ids
+	data_sample_collapsed <- merge.data.table(data_sample_collapsed, header_info_df, by = "sequence_id", all.x = TRUE)
 	
-	df = pd.read_csv('${airrFile}', sep = '\t') #, dtype = dtype_default)
+	# Filter for productive sequences with J gene and log the final count
+	data_sample_collapsed_filtered <- data_sample_collapsed[as.logical(productive) == TRUE & grepl("J", j_call),]
 	
-	# make sure that all columns are int64 for createGermline
-	idx_col = df.columns.get_loc("cdr3")
-	cols =  [col for col in df.iloc[:,0:idx_col].select_dtypes('float64').columns.values.tolist() if not re.search('support|score|identity|freq', col)]
-	df[cols] = df[cols].apply(lambda x: pd.to_numeric(x.replace("<NA>",np.NaN), errors = "coerce").astype("Int64"))
+	fwrite(data_sample_collapsed_filtered, file = paste0("${outfile}","passed.tsv"), sep = "\t", quote = F, row.names = F)
 	
-	conscount_flag = False
-	if 'consensus_count' in df: conscount_flag = True
-	if not 'duplicate_count' in df:
-	    df['duplicate_count'] = 1
-	if not 'c_call' in df or not 'isotype' in df or not 'prcons' in df or not 'primer' in df or not 'reverse_primer' in df:
-	    if 'c_call' in df:
-	        df['c_call'] = df['c_call']
-	    elif 'isotype' in df:
-	        df['c_call'] = df['isotype']
-	    elif 'primer' in df:
-	        df['c_call'] = df['primer']
-	    elif 'reverse_primer' in df:
-	        df['c_call'] = df['reverse_primer']    
-	    elif 'prcons' in df:
-	        df['c_call'] = df['prcons']
-	    elif 'barcode' in df:
-	        df['c_call'] = df['barcode']
-	    else:
-	        df['c_call'] = 'Ig'
+	log_message(paste("SEQUENCES COLLAPSED PRODUCTIVE >", nrow(data_sample_collapsed_filtered)))
 	
-	# removing sequenes with duplicated sequence id    
-	dup_n = df[df.columns[0]].count()
-	df = df.drop_duplicates(subset='sequence_id', keep='first')
-	dup_n = str(dup_n - df[df.columns[0]].count())
-	df['c_call'] = df['c_call'].astype('str').replace('<NA>','Ig')
-	#df['consensus_count'].fillna(2, inplace=True)
-	nrow_i = df[df.columns[0]].count()
-	df = df[df.apply(lambda x: x['sequence_alignment'][0:(x['v_germline_end']-1)].count('N')<=n_lim, axis = 1)]
-	low_n = str(nrow_i-df[df.columns[0]].count())
-	
-	
-	if '${collapse_replicate}'=='true' :
-		df['replicate'] = df['sequence_id'].str.split('${replicate_tag}').str[0] #_M0
-		df['sequence_start'] = df['sequence_alignment'].apply(
-		    lambda x: re.search(r'[ATCGN]', x).start() if re.search(r'[ATCGN]', x) else None
-		)
-		qv = df['sequence_start'].quantile([0.95, 0.99])
-		qj = df['j_germline_end'].quantile([0.95, 0.99])
-		df['sequence_end'] = df['j_germline_end'] - qj[0.99]
-		df['sequence_end'] = df['sequence_end'].apply(lambda x: max(x, 0))
-		gap_length = int(qv[0.99])
-		df['sequence_trimmed'] = df.apply(
-		    lambda row: ('.' * gap_length) + row['sequence_alignment'][gap_length:len(row['sequence_alignment']) - int(row['sequence_end'])],
-		    axis=1
-		)
-		df['duplicate_count'] = df.groupby('sequence_trimmed')['replicate'].transform('nunique')
-		
-		
-		df = df[df['duplicate_count'] > 1]
-		df = df.groupby('sequence_trimmed', as_index=False).first()
-		dup_n2 = df[df.columns[0]].count()
-		print(str(dup_n2)+' Sequences had a duplicated sequnece in different replicates')
-		df['sequence_vdj'] = df['sequence_trimmed'].apply(lambda x: x.replace('-', '').replace('.', ''))
-	else:
-		df['sequence_vdj'] = df['sequence_alignment'].apply(lambda x: x.replace('-', '').replace('.', ''))
-		
-	header=list(df.columns)
-	fasta_ = df.to_dict(orient='records')
-	c = CollapseDict(fasta_,nlim=10)
-	d=c.fixedseqs()
-	header.append('ISOTYPECOUNTER')
-	header.append('VGENECOUNTER')
-	header.append('JGENECOUNTER')
-	
-	rec_list = []
-	for i, f in enumerate(d):
-	    rec=f[1]
-	    rec['sequence']=rec['KEY']
-	    rec['consensus_count']=int(rec['consensus_count']) if conscount_flag else None
-	    rec['duplicate_count']=int(rec['duplicate_count'])
-	    rec_list.append(rec)
-	df2 = pd.DataFrame(rec_list, columns = header)        
-	
-	df2 = df2.drop('sequence_vdj', axis=1)
-	
-	collapse_n = str(df[df.columns[0]].count()-df2[df2.columns[0]].count())
+	log_message("Process complete.")
 
-	# removing sequences without J assignment and non functional
-	nrow_i = df2[df2.columns[0]].count()
-	cond = (~df2['j_call'].str.contains('J')|df2['productive'].isin(['F','FALSE','False']))
-	df_non = df2[cond]
-	
-	
-	df2 = df2[df2['productive'].isin(['T','TRUE','True'])]
-	cond = ~(df2['j_call'].str.contains('J'))
-	df2 = df2.drop(df2[cond].index.values)
-	
-	non_n = nrow_i-df2[df2.columns[0]].count()
-	#if conscount_flag:
-	#   df2['consensus_count'] = df2['consensus_count'].replace(1,2)
-	
-	# removing sequences with low cons count
-	
-	filter_column = "duplicate_count"
-	if conscount_flag:
-		filter_column = "consensus_count"
-	df_cons_low = df2[df2[filter_column]<conscount_filter]
-	nrow_i = df2[df2.columns[0]].count()
-	df2 = df2[df2[filter_column]>=conscount_filter]
-	
-	
-	cons_n = str(nrow_i-df2[df2.columns[0]].count())
-	nrow_i = df2[df2.columns[0]].count()    
-	
-	df2.to_csv('${outfile}'+'passed.tsv', sep = '\t',index=False) #, compression='gzip'
-	
-	pd.concat([df_cons_low,df_non]).to_csv('${outfile}'+'failed.tsv', sep = '\t',index=False)
-	
-	print(str(low_n)+' Sequences had N count over 10')
-	print(str(dup_n)+' Sequences had a duplicated sequnece id')
-	print(str(collapse_n)+' Sequences were collapsed')
-	print(str(df_non[df_non.columns[0]].count())+' Sequences were declared non functional or lacked a J assignment')
-	#print(str(df_cons_low[df_cons_low.columns[0]].count())+' Sequences had a '+filter_column+' lower than threshold')
-	print('Going forward with '+str(df2[df2.columns[0]].count())+' sequences')
 	
 	"""
 }else{
@@ -647,7 +513,7 @@ process Undocumented_Alleles {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*novel-passed.tsv$/) "novel_report/$filename"}
 input:
- set val(name),file(airr_file) from g0_19_outputFileTSV0_g_8
+ set val(name),file(airr_file) from g0_51_outputFileTSV0_g_8
  set val(v_germline_name), file(v_germline_file) from g_2_germlineFastaFile_g_8
 
 output:
@@ -938,7 +804,7 @@ if(germlineFile.getName().endsWith("fasta")){
 process airrseq_to_fasta {
 
 input:
- set val(name), file(airrseq_data) from g0_19_outputFileTSV0_g_80
+ set val(name), file(airrseq_data) from g0_51_outputFileTSV0_g_80
 
 output:
  set val(name), file(outfile)  into g_80_germlineFastaFile0_g11_12, g_80_germlineFastaFile0_g11_9, g_80_germlineFastaFile0_g21_12, g_80_germlineFastaFile0_g21_9
