@@ -370,9 +370,9 @@ n_max = params.First_Alignment_Collapse_AIRRseq_V2.n_max
 name_alignment = params.First_Alignment_Collapse_AIRRseq_V2.name_alignment
 ncores = params.First_Alignment_Collapse_AIRRseq_V2.ncores
 
-outfile = airrFile.toString() - '.tsv' + name_alignment + "_collapsed-"
+outfile = airrSeq.toString() - '.tsv' + name_alignment + "_collapsed-"
 logFile = nameFile+'_process_log.txt'
-if(airrFile.getName().endsWith(".tsv")){	
+if(airrSeq.getName().endsWith(".tsv")){	
 	"""
 	# Load necessary libraries
 	library(data.table)
