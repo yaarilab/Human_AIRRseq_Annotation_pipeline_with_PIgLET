@@ -374,6 +374,7 @@ outfile = airrSeq.toString() - '.tsv' + name_alignment + "_collapsed-"
 logFile = nameFile+'_process_log.txt'
 if(airrSeq.getName().endsWith(".tsv")){	
 	"""
+	#!/usr/bin/env Rscript
 	# Load necessary libraries
 	library(data.table)
 	library(tigger)
