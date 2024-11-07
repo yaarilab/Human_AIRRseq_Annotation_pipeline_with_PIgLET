@@ -27,6 +27,8 @@ params.First_Alignment_Collapse_AIRRseq_V2.name_alignment = "First_Alignment"
 params.First_Alignment_Collapse_AIRRseq_V2.n_max = 10
 params.First_Alignment_Collapse_AIRRseq_V2.ncores = 20
 
+params.filter_dupcount.name_alignment = "First_Alignment"
+
 // Process Parameters for Undocumented_Alleles:
 params.Undocumented_Alleles.chain = params.chain
 params.Undocumented_Alleles.num_threads = params.nproc
@@ -415,9 +417,9 @@ input:
  set val(name),file(airrSeq) from g111_12_outputFileTSV0_g111_52
 
 output:
- set val(name), file("${outfile}"+"passed.tsv")  into g111_52_outputFileTSV0_g_8, g111_52_outputFileTSV0_g_80
+ set val(name), file("${outfile}"+"passed.tsv")  into g111_52_outputFileTSV0_g_80
  set val(name), file("${name}"+"_process_log.txt")  into g111_52_outputFileTxt11
- set val(name), file("${outfile}"+"unfiltered.tsv")  into g111_52_outputFileTSV22
+ set val(name), file("${outfile}"+"unfiltered.tsv")  into g111_52_outputFileTSV2_g_112
 
 script:
 duplicate_count_min = params.First_Alignment_Collapse_AIRRseq_V2.duplicate_count_min
@@ -563,6 +565,34 @@ if(airrSeq.getName().endsWith(".tsv")){
 
 }
 
+
+process filter_dupcount {
+
+input:
+ set val(name),file(airrSeq) from g111_52_outputFileTSV2_g_112
+
+output:
+ set val(name),file("*_duplicate-pass.tsv")  into g_112_outputFileTSV0_g_8
+
+script:
+name_alignment = params.filter_dupcount.name_alignment
+
+outfile = airrSeq.toString() - '.tsv' + name_alignment + "_collapsed-"
+
+"""
+#!/usr/bin/env Rscript
+
+library(data.table)
+
+data_sample <- fread("${airrSeq}")
+
+data_sample <- data_sample[as.numeric(DUPCOUNT)>1,]
+
+fwrite(data_sample, file = paste0("${outfile}","_duplicate-pass.tsv"), sep = "\t", quote = F, row.names = F)
+"""
+
+}
+
 if(params.container.startsWith("peresay")){
 	cmd = 'source("/usr/local/bin/functions_tigger.R")'
 }else{
@@ -572,7 +602,7 @@ process Undocumented_Alleles {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*novel-passed.tsv$/) "novel_report/$filename"}
 input:
- set val(name),file(airr_file) from g111_52_outputFileTSV0_g_8
+ set val(name),file(airr_file) from g_112_outputFileTSV0_g_8
  set val(v_germline_name), file(v_germline_file) from g_2_germlineFastaFile_g_8
 
 output:
