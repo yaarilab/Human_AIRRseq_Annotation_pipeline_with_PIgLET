@@ -417,7 +417,7 @@ input:
  set val(name),file(airrSeq) from g111_12_outputFileTSV0_g111_52
 
 output:
- set val(name), file("${outfile}"+"passed.tsv")  into g111_52_outputFileTSV0_g_80
+ set val(name), file("${outfile}"+"passed.tsv")  into g111_52_outputFileTSV00
  set val(name), file("${name}"+"_process_log.txt")  into g111_52_outputFileTxt11
  set val(name), file("${outfile}"+"unfiltered.tsv")  into g111_52_outputFileTSV2_g_112
 
@@ -572,7 +572,7 @@ input:
  set val(name),file(airrSeq) from g111_52_outputFileTSV2_g_112
 
 output:
- set val(name),file("*_duplicate-pass.tsv")  into g_112_outputFileTSV0_g_8
+ set val(name),file("*_duplicate-pass.tsv")  into g_112_outputFileTSV0_g_8, g_112_outputFileTSV0_g_80
 
 script:
 name_alignment = params.filter_dupcount.name_alignment
@@ -591,6 +591,52 @@ data_sample <- data_sample[as.numeric(DUPCOUNT)>1,]
 fwrite(data_sample, file = paste0("${outfile}","_duplicate-pass.tsv"), sep = "\t", quote = F, row.names = F)
 """
 
+}
+
+
+process airrseq_to_fasta {
+
+input:
+ set val(name), file(airrseq_data) from g_112_outputFileTSV0_g_80
+
+output:
+ set val(name), file(outfile)  into g_80_germlineFastaFile0_g11_12, g_80_germlineFastaFile0_g11_9, g_80_germlineFastaFile0_g21_12, g_80_germlineFastaFile0_g21_9
+
+script:
+
+outfile = name+"_collapsed_seq.fasta"
+
+"""
+#!/usr/bin/env Rscript
+
+data <- data.table::fread("${airrseq_data}", stringsAsFactors = F, data.table = F)
+
+data_columns <- names(data)
+
+# take extra columns after cdr3
+
+idx_cdr <- which(data_columns=="cdr3")+1
+
+add_columns <- data_columns[idx_cdr:length(data_columns)]
+
+unique_information <- unique(c("sequence_id", "duplicate_count", "consensus_count", "c_call", add_columns))
+
+unique_information <- unique_information[unique_information %in% data_columns]
+
+seqs <- data[["sequence"]]
+
+seqs_name <-
+  sapply(1:nrow(data), function(x) {
+    paste0(unique_information,
+           rep('=', length(unique_information)),
+           data[x, unique_information],
+           collapse = '|')
+  })
+seqs_name <- gsub('sequence_id=', '', seqs_name, fixed = T)
+
+tigger::writeFasta(setNames(seqs, seqs_name), "${outfile}")
+
+"""
 }
 
 if(params.container.startsWith("peresay")){
@@ -887,52 +933,6 @@ if(germlineFile.getName().endsWith("fasta")){
 	"""
 }
 
-}
-
-
-process airrseq_to_fasta {
-
-input:
- set val(name), file(airrseq_data) from g111_52_outputFileTSV0_g_80
-
-output:
- set val(name), file(outfile)  into g_80_germlineFastaFile0_g11_12, g_80_germlineFastaFile0_g11_9, g_80_germlineFastaFile0_g21_12, g_80_germlineFastaFile0_g21_9
-
-script:
-
-outfile = name+"_collapsed_seq.fasta"
-
-"""
-#!/usr/bin/env Rscript
-
-data <- data.table::fread("${airrseq_data}", stringsAsFactors = F, data.table = F)
-
-data_columns <- names(data)
-
-# take extra columns after cdr3
-
-idx_cdr <- which(data_columns=="cdr3")+1
-
-add_columns <- data_columns[idx_cdr:length(data_columns)]
-
-unique_information <- unique(c("sequence_id", "duplicate_count", "consensus_count", "c_call", add_columns))
-
-unique_information <- unique_information[unique_information %in% data_columns]
-
-seqs <- data[["sequence"]]
-
-seqs_name <-
-  sapply(1:nrow(data), function(x) {
-    paste0(unique_information,
-           rep('=', length(unique_information)),
-           data[x, unique_information],
-           collapse = '|')
-  })
-seqs_name <- gsub('sequence_id=', '', seqs_name, fixed = T)
-
-tigger::writeFasta(setNames(seqs, seqs_name), "${outfile}")
-
-"""
 }
 
 
