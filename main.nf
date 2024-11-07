@@ -409,7 +409,7 @@ if(igblastOut.getName().endsWith(".out")){
 process First_Alignment_Collapse_AIRRseq_V2 {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+passed.tsv$/) "initial_annotation/$filename"}
-publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_process_log.txt$/) "initial_annotation/$filename"}
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*_process_log.txt$/) "initial_annotation_logs/$filename"}
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /${outfile}+unfiltered.tsv$/) "initial_annotation/$filename"}
 input:
  set val(name),file(airrSeq) from g108_12_outputFileTSV0_g108_52
